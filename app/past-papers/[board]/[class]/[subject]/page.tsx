@@ -82,7 +82,7 @@ export default async function SubjectPapersPage({ params }: { params: Promise<{ 
   const breadcrumbs = [
     { name: 'Home', item: 'https://sabaqpoint.com' },
     { name: board.name, item: `https://sabaqpoint.com/past-papers/${boardSlug}` },
-    { name: `Class ${classParam}`, item: `https://sabaqpoint.com/past-papers/${boardSlug}/${classParam}` },
+    { name: `Class ${classLevel}`, item: `https://sabaqpoint.com/past-papers/${boardSlug}/${classParam}` },
     { name: formattedSubject, item: `https://sabaqpoint.com/past-papers/${boardSlug}/${classParam}/${subjectParam}` }
   ];
 
@@ -98,13 +98,13 @@ export default async function SubjectPapersPage({ params }: { params: Promise<{ 
             <ChevronRight className="w-4 h-4 text-white/30" />
             <Link href={`/past-papers/${boardSlug}`} className="text-white/60 hover:text-white">{board.name}</Link>
             <ChevronRight className="w-4 h-4 text-white/30" />
-            <Link href={`/past-papers/${boardSlug}/${classParam}`} className="text-white/60 hover:text-white">Class {classParam}</Link>
+            <Link href={`/past-papers/${boardSlug}/${classParam}`} className="text-white/60 hover:text-white">Class {classLevel}</Link>
             <ChevronRight className="w-4 h-4 text-white/30" />
             <span className="text-white font-semibold">{formattedSubject}</span>
           </nav>
 
           <h1 className="text-display-lg font-black font-sans text-white mb-3 tracking-tight">
-            {formattedSubject} — Class {classParam}
+            {formattedSubject} — Class {classLevel}
           </h1>
           <p className="text-surface-500 font-bold text-lg max-w-lg">
             Browse all available past papers for {formattedSubject} under {board.name}.

@@ -39,7 +39,13 @@ export default async function AdminPage() {
             <AddBoard />
           </div>
           <div className="lg:col-span-2">
-            <AddPaper boards={boards || []} existingCategories={categories || []} />
+            <AddPaper 
+              boards={boards || []} 
+              existingCategories={categories || []} 
+              storageBucketId={process.env.APPWRITE_STORAGE_BUCKET_ID || ''}
+              appwriteEndpoint={process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || ''}
+              appwriteProjectId={process.env.NEXT_PUBLIC_APPWRITE_PROJECT || ''}
+            />
           </div>
         </div>
       </div>

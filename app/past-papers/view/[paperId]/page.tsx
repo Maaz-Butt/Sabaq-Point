@@ -88,12 +88,30 @@ export default async function ViewPaperPage({ params }: { params: Promise<{ pape
           </div>
         ) : (
           /* ── PDF viewer: fit whole page to screen (using view=Fit standard open parameter) ── */
-          <iframe
-            src={`${url}#toolbar=0&navpanes=0&view=Fit`}
+          <object
+            data={`${url}#toolbar=0&navpanes=0&view=Fit`}
+            type="application/pdf"
             className="w-full h-full border-0"
             title={paper.title}
-            allowFullScreen
-          />
+          >
+            <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 bg-[#111111] text-white">
+              <div className="w-16 h-16 rounded-full bg-brand-yellow/10 border border-brand-yellow/20 flex items-center justify-center text-brand-yellow mb-4 shadow-[0_0_15px_rgba(252,213,113,0.1)]">
+                <ExternalLink size={24} />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Browser PDF Preview Blocked</h3>
+              <p className="text-sm text-surface-500 max-w-md mb-6 leading-relaxed">
+                Your browser or active security extensions blocked embedding the preview. Click the button below to view the solved past paper directly in a new tab.
+              </p>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 rounded-full bg-brand-yellow text-[#121212] font-bold text-sm hover:brightness-110 active:scale-95 transition-all shadow-[0_4px_20px_rgba(252,213,113,0.25)]"
+              >
+                Open Past Paper
+              </a>
+            </div>
+          </object>
         )}
 
         {/* ── Floating action bar ── */}
@@ -123,7 +141,7 @@ export default async function ViewPaperPage({ params }: { params: Promise<{ pape
               style={{ touchAction: 'manipulation' } as React.CSSProperties}
             >
               <ExternalLink size={16} />
-              <span className="hidden xs:inline">Open</span>
+              <span className="hidden sm:inline">Open</span>
             </a>
 
             {/* Download */}

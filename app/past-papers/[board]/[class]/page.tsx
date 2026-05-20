@@ -65,7 +65,7 @@ export default async function BoardClassSubjectsPage({ params }: { params: Promi
   const breadcrumbs = [
     { name: 'Home', item: 'https://sabaqpoint.com' },
     { name: board.name, item: `https://sabaqpoint.com/past-papers/${boardSlug}` },
-    { name: `Class ${classParam}`, item: `https://sabaqpoint.com/past-papers/${boardSlug}/${classParam}` }
+    { name: `Class ${classLevel}`, item: `https://sabaqpoint.com/past-papers/${boardSlug}/${classParam}` }
   ];
 
   const subjectColors = [
@@ -84,11 +84,11 @@ export default async function BoardClassSubjectsPage({ params }: { params: Promi
             <ChevronRight className="w-4 h-4 text-white/30" />
             <Link href={`/past-papers/${boardSlug}`} className="text-white/60 hover:text-white">{board.name}</Link>
             <ChevronRight className="w-4 h-4 text-white/30" />
-            <span className="text-white font-semibold">Class {classParam}</span>
+            <span className="text-white font-semibold">Class {classLevel}</span>
           </nav>
 
           <h1 className="text-display-lg font-black font-sans text-white mb-3 tracking-tight">
-            Class {classParam} Subjects
+            Class {classLevel} Subjects
           </h1>
           <p className="text-surface-500 font-bold text-lg">{board.name}</p>
         </div>

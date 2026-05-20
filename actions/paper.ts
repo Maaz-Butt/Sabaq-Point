@@ -134,20 +134,26 @@ export async function createPaper(formData: FormData) {
     const group = formData.get('group') as string;
     const category = formData.get('category') as string;
     const paperFile = formData.get('paperFile') as File | null;
+    const paperFileId = formData.get('paperFileId') as string | null;
 
-    if (!title || !boardId || !classLevel || !subject || !year || !type || !paperFile || paperFile.size === 0) {
+    if (!title || !boardId || !classLevel || !subject || !year || !type || (!paperFileId && (!paperFile || paperFile.size === 0))) {
       return { success: false, error: 'Please fill in all required fields and upload a file' };
     }
 
-    // Upload to Appwrite Storage
-    const uploadedFile = await storage.createFile(
-      STORAGE_BUCKET_ID,
-      ID.unique(),
-      paperFile
-    );
+    let fileIdToUse = paperFileId;
+
+    if (!fileIdToUse) {
+      // Upload to Appwrite Storage (fallback if not uploaded client-side)
+      const uploadedFile = await storage.createFile(
+        STORAGE_BUCKET_ID,
+        ID.unique(),
+        paperFile!
+      );
+      fileIdToUse = uploadedFile.$id;
+    }
     
     // Get file URL (using the view endpoint)
-    const pdfUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${STORAGE_BUCKET_ID}/files/${uploadedFile.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`;
+    const pdfUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${STORAGE_BUCKET_ID}/files/${fileIdToUse}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT}`;
 
     await databases.createDocument(
       DATABASE_ID,

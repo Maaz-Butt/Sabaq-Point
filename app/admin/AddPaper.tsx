@@ -4,8 +4,21 @@ import React, { useRef, useState, useEffect } from 'react';
 import { createPaper } from '@/actions/paper';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, CheckCircle, AlertCircle, FileUp, X, FileText } from 'lucide-react';
+import { Client, Storage, ID } from 'appwrite';
 
-export default function AddPaper({ boards, existingCategories = [] }: { boards: any[], existingCategories?: string[] }) {
+export default function AddPaper({ 
+  boards, 
+  existingCategories = [],
+  storageBucketId,
+  appwriteEndpoint,
+  appwriteProjectId
+}: { 
+  boards: any[], 
+  existingCategories?: string[],
+  storageBucketId: string,
+  appwriteEndpoint: string,
+  appwriteProjectId: string
+}) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState({ type: '', message: '' });
@@ -72,23 +85,9 @@ export default function AddPaper({ boards, existingCategories = [] }: { boards: 
     }
   };
 
-  const simulateProgress = () => {
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return 95;
-        }
-        const step = Math.max(1, Math.floor((95 - prev) * 0.15));
-        return prev + step;
-      });
-    }, 150);
-    return interval;
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const formElement = e.currentTarget;
     if (!selectedFile) {
       setStatus({ type: 'error', message: 'Please select a paper file first.' });
       return;
@@ -101,12 +100,33 @@ export default function AddPaper({ boards, existingCategories = [] }: { boards: 
 
     setIsSubmitting(true);
     setStatus({ type: '', message: '' });
-    const progressInterval = simulateProgress();
+    setUploadProgress(0);
     
     try {
-      const formData = new FormData(e.currentTarget);
-      // Explicitly set the file to ensure mobile browsers (like iOS Safari) don't omit it
-      formData.set('paperFile', selectedFile);
+      // 1. Initialize Appwrite Client & Storage
+      const client = new Client()
+        .setEndpoint(appwriteEndpoint)
+        .setProject(appwriteProjectId);
+      
+      const storage = new Storage(client);
+
+      // 2. Upload file directly to Appwrite from client with progress monitoring
+      const uploadedFile = await storage.createFile(
+        storageBucketId,
+        ID.unique(),
+        selectedFile,
+        undefined,
+        (progress: any) => {
+          const percentage = Math.round(progress.progress);
+          // Hold at 99% until the server action succeeds
+          setUploadProgress(Math.min(99, percentage));
+        }
+      );
+
+      // 3. Submit metadata and file ID to Server Action
+      const formData = new FormData(formElement);
+      formData.delete('paperFile'); // Remove actual file from payload to bypass Vercel body limits
+      formData.set('paperFileId', uploadedFile.$id);
 
       const result = await createPaper(formData);
       if (result?.success) {
@@ -115,6 +135,12 @@ export default function AddPaper({ boards, existingCategories = [] }: { boards: 
         setUploadProgress(100);
         setStatus({ type: 'success', message: 'Paper added successfully!' });
       } else {
+        // If server action fails, attempt to delete the uploaded file from storage
+        try {
+          await storage.deleteFile(storageBucketId, uploadedFile.$id);
+        } catch (delError) {
+          console.error('Failed to cleanup uploaded file:', delError);
+        }
         setStatus({ type: 'error', message: result?.error || 'Failed to add paper.' });
       }
     } catch (error: any) {
@@ -124,7 +150,6 @@ export default function AddPaper({ boards, existingCategories = [] }: { boards: 
         message: error?.message || 'An unexpected error occurred during upload. Please check your network connection.' 
       });
     } finally {
-      clearInterval(progressInterval);
       setIsSubmitting(false);
       setTimeout(() => {
         setStatus({ type: '', message: '' });
