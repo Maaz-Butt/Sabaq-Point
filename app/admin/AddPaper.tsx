@@ -19,28 +19,89 @@ export default function AddPaper({
   appwriteEndpoint: string,
   appwriteProjectId: string
 }) {
+  interface UploadFileItem {
+    id: string;
+    file: File;
+    title: string;
+    previewUrl?: string;
+    progress: number;
+    status: 'idle' | 'uploading' | 'success' | 'error';
+    error?: string;
+  }
+
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState({ type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFiles, setSelectedFiles] = useState<UploadFileItem[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
 
+  const [currentUploadIndex, setCurrentUploadIndex] = useState(0);
+  const [totalUploadCount, setTotalUploadCount] = useState(0);
+  const [currentUploadProgress, setCurrentUploadProgress] = useState(0);
+
+  // Keep a ref of selected files to clean up previews on unmount
+  const filesRef = useRef<UploadFileItem[]>([]);
   useEffect(() => {
-    if (!selectedFile) {
-      setImagePreviewUrl(null);
+    filesRef.current = selectedFiles;
+  }, [selectedFiles]);
+
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach(item => {
+        if (item.previewUrl) {
+          URL.revokeObjectURL(item.previewUrl);
+        }
+      });
+    };
+  }, []);
+
+  const addFiles = (files: File[]) => {
+    const validFiles = files.filter(
+      file => file.type === "application/pdf" || file.type.startsWith("image/")
+    );
+
+    if (validFiles.length === 0) {
+      setStatus({ type: 'error', message: 'Only PDF or Image files are allowed.' });
       return;
     }
-    if (selectedFile.type.startsWith('image/')) {
-      const url = URL.createObjectURL(selectedFile);
-      setImagePreviewUrl(url);
-      return () => URL.revokeObjectURL(url);
-    } else {
-      setImagePreviewUrl(null);
-    }
-  }, [selectedFile]);
+
+    const newItems: UploadFileItem[] = validFiles.map(file => {
+      let previewUrl: string | undefined;
+      if (file.type.startsWith('image/')) {
+        previewUrl = URL.createObjectURL(file);
+      }
+      // Extract file name without extension
+      const title = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+
+      return {
+        id: Math.random().toString(36).substring(2, 9),
+        file,
+        title,
+        previewUrl,
+        progress: 0,
+        status: 'idle',
+      };
+    });
+
+    setSelectedFiles(prev => [...prev, ...newItems]);
+  };
+
+  const removeFile = (id: string) => {
+    setSelectedFiles(prev => {
+      const target = prev.find(item => item.id === id);
+      if (target?.previewUrl) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter(item => item.id !== id);
+    });
+  };
+
+  const handleTitleChange = (id: string, newTitle: string) => {
+    setSelectedFiles(prev =>
+      prev.map(item => (item.id === id ? { ...item, title: newTitle } : item))
+    );
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -57,104 +118,135 @@ export default function AddPaper({
     e.stopPropagation();
     setIsDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type === "application/pdf" || file.type.startsWith("image/")) {
-        setSelectedFile(file);
-        if (fileInputRef.current) {
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(file);
-          fileInputRef.current.files = dataTransfer.files;
-        }
-      } else {
-        setStatus({ type: 'error', message: 'Only PDF or Image files are allowed.' });
-      }
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      addFiles(Array.from(e.dataTransfer.files));
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const removeFile = () => {
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(Array.from(e.target.files));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formElement = e.currentTarget;
-    if (!selectedFile) {
-      setStatus({ type: 'error', message: 'Please select a paper file first.' });
+
+    const filesToUpload = selectedFiles.filter(f => f.status === 'idle' || f.status === 'error');
+    if (filesToUpload.length === 0) {
+      setStatus({ type: 'error', message: 'Please select at least one paper file first.' });
       return;
     }
 
-    if (selectedFile.size > 50 * 1024 * 1024) {
-      setStatus({ type: 'error', message: 'File is too large. Maximum size allowed is 50MB.' });
+    // Check size limit (50MB) for all files
+    const largeFiles = filesToUpload.filter(f => f.file.size > 50 * 1024 * 1024);
+    if (largeFiles.length > 0) {
+      setStatus({ 
+        type: 'error', 
+        message: `Some files exceed the 50MB limit: ${largeFiles.map(f => f.file.name).join(', ')}` 
+      });
       return;
     }
 
     setIsSubmitting(true);
     setStatus({ type: '', message: '' });
-    setUploadProgress(0);
-    
-    try {
-      // 1. Initialize Appwrite Client & Storage
-      const client = new Client()
-        .setEndpoint(appwriteEndpoint)
-        .setProject(appwriteProjectId);
-      
-      const storage = new Storage(client);
 
-      // 2. Upload file directly to Appwrite from client with progress monitoring
-      const uploadedFile = await storage.createFile(
-        storageBucketId,
-        ID.unique(),
-        selectedFile,
-        undefined,
-        (progress: any) => {
-          const percentage = Math.round(progress.progress);
-          // Hold at 99% until the server action succeeds
-          setUploadProgress(Math.min(99, percentage));
-        }
+    const totalToUpload = filesToUpload.length;
+    setTotalUploadCount(totalToUpload);
+    let currentIdx = 0;
+
+    // Initialize Appwrite Client & Storage
+    const client = new Client()
+      .setEndpoint(appwriteEndpoint)
+      .setProject(appwriteProjectId);
+    const storage = new Storage(client);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const item of filesToUpload) {
+      currentIdx++;
+      setCurrentUploadIndex(currentIdx);
+      setCurrentUploadProgress(0);
+
+      // Update item status to uploading
+      setSelectedFiles(prev =>
+        prev.map(f => (f.id === item.id ? { ...f, status: 'uploading', progress: 0 } : f))
       );
 
-      // 3. Submit metadata and file ID to Server Action
-      const formData = new FormData(formElement);
-      formData.delete('paperFile'); // Remove actual file from payload to bypass Vercel body limits
-      formData.set('paperFileId', uploadedFile.$id);
+      try {
+        // 1. Upload to Appwrite with progress
+        const uploadedFile = await storage.createFile(
+          storageBucketId,
+          ID.unique(),
+          item.file,
+          undefined,
+          (progress: any) => {
+            const percentage = Math.round(progress.progress);
+            setCurrentUploadProgress(Math.min(99, percentage));
+            setSelectedFiles(prev =>
+              prev.map(f => (f.id === item.id ? { ...f, progress: Math.min(99, percentage) } : f))
+            );
+          }
+        );
 
-      const result = await createPaper(formData);
-      if (result?.success) {
-        formRef.current?.reset();
-        setSelectedFile(null);
-        setUploadProgress(100);
-        setStatus({ type: 'success', message: 'Paper added successfully!' });
-      } else {
-        // If server action fails, attempt to delete the uploaded file from storage
-        try {
-          await storage.deleteFile(storageBucketId, uploadedFile.$id);
-        } catch (delError) {
-          console.error('Failed to cleanup uploaded file:', delError);
+        // 2. Prepare Form Data for Server Action
+        const formData = new FormData(formElement);
+        formData.delete('paperFile'); // bypass body limit
+        formData.set('paperFileId', uploadedFile.$id);
+        formData.set('title', item.title); // set individual custom title
+
+        // 3. Call Server Action
+        const result = await createPaper(formData);
+        
+        if (result?.success) {
+          successCount++;
+          setCurrentUploadProgress(100);
+          setSelectedFiles(prev =>
+            prev.map(f => (f.id === item.id ? { ...f, status: 'success', progress: 100 } : f))
+          );
+        } else {
+          // Cleanup uploaded file from storage if server action fails
+          try {
+            await storage.deleteFile(storageBucketId, uploadedFile.$id);
+          } catch (delError) {
+            console.error('Failed to cleanup uploaded file:', delError);
+          }
+          throw new Error(result?.error || 'Failed to add paper record.');
         }
-        setStatus({ type: 'error', message: result?.error || 'Failed to add paper.' });
+      } catch (error: any) {
+        failCount++;
+        setCurrentUploadProgress(0);
+        console.error(`Error uploading ${item.file.name}:`, error);
+        setSelectedFiles(prev =>
+          prev.map(f => (f.id === item.id ? { ...f, status: 'error', progress: 0, error: error?.message || 'Upload failed.' } : f))
+        );
       }
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      setStatus({ 
-        type: 'error', 
-        message: error?.message || 'An unexpected error occurred during upload. Please check your network connection.' 
-      });
-    } finally {
-      setIsSubmitting(false);
+    }
+
+    setIsSubmitting(false);
+
+    if (failCount === 0) {
+      setStatus({ type: 'success', message: `All ${successCount} papers uploaded successfully!` });
+      // Reset files after brief delay
       setTimeout(() => {
+        setSelectedFiles(prev => {
+          prev.forEach(item => {
+            if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+          });
+          return [];
+        });
+        formRef.current?.reset();
         setStatus({ type: '', message: '' });
-        setUploadProgress(0);
-      }, 3000);
+      }, 2500);
+    } else if (successCount > 0) {
+      setStatus({ 
+        type: 'success', 
+        message: `Successfully uploaded ${successCount} papers. ${failCount} failed. You can adjust titles/errors and try again.` 
+      });
+    } else {
+      setStatus({ type: 'error', message: 'Failed to upload papers. Please review errors and try again.' });
     }
   };
 
@@ -180,10 +272,13 @@ export default function AddPaper({
               <FileUp size={24} className="text-brand-yellow absolute" />
             </div>
             
-            <h3 style={{ fontFamily: 'var(--font-outfit)' }} className="text-lg font-bold text-white mb-2">
-              Uploading Paper
+            <h3 style={{ fontFamily: 'var(--font-outfit)' }} className="text-lg font-bold text-white mb-1">
+              Uploading {currentUploadIndex} of {totalUploadCount}
             </h3>
-            <p className="text-sm text-surface-500 max-w-[280px] mb-6">
+            <p className="text-sm text-brand-yellow font-semibold max-w-[280px] mb-2 truncate">
+              {selectedFiles.filter(f => f.status === 'uploading')[0]?.title || 'Processing...'}
+            </p>
+            <p className="text-xs text-surface-500 max-w-[280px] mb-6">
               Please wait while we upload and process your file. Do not navigate away.
             </p>
 
@@ -191,11 +286,11 @@ export default function AddPaper({
               <motion.div 
                 className="bg-brand-yellow h-full"
                 initial={{ width: 0 }}
-                animate={{ width: `${uploadProgress}%` }}
+                animate={{ width: `${currentUploadProgress}%` }}
                 transition={{ duration: 0.1 }}
               />
             </div>
-            <span className="text-sm font-bold text-brand-yellow">{uploadProgress}%</span>
+            <span className="text-sm font-bold text-brand-yellow">{currentUploadProgress}%</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -206,15 +301,10 @@ export default function AddPaper({
         <div className="w-9 h-9 rounded-lg bg-secondary-500 flex items-center justify-center">
           <FileUp size={18} className="text-white" />
         </div>
-        Add New Paper
+        Add New Papers
       </h2>
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label htmlFor="title" className={labelClasses}>Paper Title</label>
-          <input type="text" name="title" id="title" required className={inputClasses} placeholder="e.g., Physics 10th Class 2023" />
-        </div>
-        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="boardId" className={labelClasses}>Board</label>
@@ -277,14 +367,17 @@ export default function AddPaper({
 
         {/* File upload area */}
         <div>
-          <label htmlFor="paperFile" className={labelClasses}>Upload File (PDF or Image)</label>
+          <label htmlFor="paperFile" className={labelClasses}>
+            {selectedFiles.length > 0 ? "Add More Files (PDF or Image)" : "Upload Files (PDF or Image)"}
+          </label>
           <input
             type="file"
             ref={fileInputRef}
             accept="application/pdf, image/*"
             name="paperFile"
             id="paperFile"
-            required
+            multiple
+            required={selectedFiles.length === 0}
             onChange={handleFileChange}
             className="sr-only"
           />
@@ -295,60 +388,124 @@ export default function AddPaper({
             onDragLeave={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center min-h-[140px] ${
+            className={`border border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center min-h-[120px] ${
               isDragActive 
                 ? 'border-brand-yellow bg-brand-yellow/5 scale-[0.99]' 
-                : selectedFile 
-                  ? 'border-emerald-500/30 bg-emerald-500/5' 
-                  : 'border-white/10 bg-surface-50/30 hover:border-brand-yellow/50 hover:bg-surface-50/50'
+                : 'border-white/10 bg-surface-50/30 hover:border-brand-yellow/50 hover:bg-surface-50/50'
             }`}
           >
-            {selectedFile ? (
-              <div className="w-full flex items-center justify-between gap-4 animate-page-in" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center gap-3 min-w-0">
-                  {imagePreviewUrl ? (
-                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/25">
-                      <img src={imagePreviewUrl} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg bg-brand-yellow/10 flex items-center justify-center flex-shrink-0 text-brand-yellow border border-brand-yellow/20">
-                      <FileText size={20} />
-                    </div>
-                  )}
-                  <div className="text-left min-w-0">
-                    <p className="text-sm font-semibold text-white truncate max-w-[200px] sm:max-w-[280px]">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-xs text-surface-500">
-                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={removeFile}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-red-500/10 text-surface-500 hover:text-red-400 flex items-center justify-center transition-colors border border-white/10"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3 border border-white/10 text-surface-500 hover:text-brand-yellow transition-colors">
-                  <Upload size={18} />
-                </div>
-                <p className="text-sm font-medium text-white">
-                  Drag & drop file here, or <span className="text-brand-yellow underline">browse</span>
-                </p>
-                <p className="text-xs text-surface-500 mt-1">
-                  Supports PDF or Image files up to 50MB
-                </p>
-              </>
-            )}
+            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-3 border border-white/10 text-surface-500 hover:text-brand-yellow transition-colors">
+              <Upload size={18} />
+            </div>
+            <p className="text-sm font-medium text-white">
+              Drag & drop {selectedFiles.length > 0 ? 'more ' : ''}files here, or <span className="text-brand-yellow underline">browse</span>
+            </p>
+            <p className="text-xs text-surface-500 mt-1">
+              Supports multiple PDF or Image files up to 50MB each
+            </p>
           </div>
         </div>
 
+        {/* Selected Files List */}
+        {selectedFiles.length > 0 && (
+          <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5 animate-page-in">
+            <div className="flex items-center justify-between text-[10px] text-surface-500 font-bold px-1 uppercase tracking-wider">
+              <span>Selected Files ({selectedFiles.length})</span>
+              <button 
+                type="button" 
+                disabled={isSubmitting}
+                onClick={() => {
+                  selectedFiles.forEach(item => {
+                    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                  });
+                  setSelectedFiles([]);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+                className="text-red-400 hover:text-red-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Clear All
+              </button>
+            </div>
+            
+            <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+              {selectedFiles.map((item) => (
+                <div 
+                  key={item.id}
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
+                    item.status === 'success' 
+                      ? 'border-emerald-500/30 bg-emerald-500/5' 
+                      : item.status === 'error'
+                        ? 'border-red-500/30 bg-red-500/5'
+                        : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {/* Preview/Thumbnail */}
+                  {item.previewUrl ? (
+                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 flex-shrink-0 bg-black/25">
+                      <img src={item.previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-brand-yellow/10 flex items-center justify-center flex-shrink-0 text-brand-yellow border border-brand-yellow/20">
+                      <FileText size={18} />
+                    </div>
+                  )}
 
+                  {/* Editable Title Input & Details */}
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={item.title}
+                      onChange={(e) => handleTitleChange(item.id, e.target.value)}
+                      disabled={isSubmitting || item.status === 'success'}
+                      placeholder="Enter customized paper title..."
+                      className="w-full bg-transparent border-b border-transparent hover:border-white/10 focus:border-brand-yellow text-sm font-semibold text-white focus:outline-none pb-0.5 transition-all truncate disabled:opacity-75"
+                    />
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-surface-500 font-medium">
+                        {(item.file.size / (1024 * 1024)).toFixed(2)} MB
+                      </span>
+                      {item.error && (
+                        <span className="text-[10px] text-red-400 font-semibold truncate max-w-[150px] sm:max-w-[250px]">
+                          • {item.error}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action/Status Indicator */}
+                  <div className="flex-shrink-0 flex items-center gap-2">
+                    {item.status === 'uploading' && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full border-2 border-brand-yellow/30 border-t-brand-yellow animate-spin" />
+                        <span className="text-xs font-bold text-brand-yellow">{item.progress}%</span>
+                      </div>
+                    )}
+                    {item.status === 'success' && (
+                      <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                        <CheckCircle size={14} />
+                      </div>
+                    )}
+                    {item.status === 'error' && (
+                      <div className="w-6 h-6 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400">
+                        <AlertCircle size={14} />
+                      </div>
+                    )}
+                    {item.status === 'idle' && (
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => removeFile(item.id)}
+                        className="w-7 h-7 rounded-full bg-white/5 hover:bg-red-500/10 text-surface-500 hover:text-red-400 flex items-center justify-center transition-colors border border-white/10 cursor-pointer"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <AnimatePresence>
           {status.message && (
@@ -357,7 +514,9 @@ export default function AddPaper({
               animate={{ opacity: 1, y: 0, height: 'auto' }}
               exit={{ opacity: 0, y: -8, height: 0 }}
               className={`flex items-center gap-2 p-3 rounded-xl text-sm font-medium ${
-                status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
+                status.type === 'success' 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                  : 'bg-red-500/10 text-red-400 border border-red-500/20'
               }`}
             >
               {status.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
@@ -368,20 +527,25 @@ export default function AddPaper({
 
         <motion.button 
           type="submit" 
-          disabled={isSubmitting}
+          disabled={isSubmitting || selectedFiles.length === 0}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
-          className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {isSubmitting ? (
             <div className="flex items-center gap-2">
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full" />
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               Uploading...
             </div>
           ) : (
             <>
               <Upload size={16} />
-              Upload Paper
+              {selectedFiles.length > 1 
+                ? `Upload ${selectedFiles.length} Papers` 
+                : selectedFiles.length === 1 
+                  ? 'Upload 1 Paper' 
+                  : 'Upload Papers'
+              }
             </>
           )}
         </motion.button>
