@@ -3,8 +3,9 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { createPaper } from '@/actions/paper';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, CheckCircle, AlertCircle, FileUp, X, FileText } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileUp, X, FileText, Type } from 'lucide-react';
 import { Client, Storage, ID } from 'appwrite';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 
 export default function AddPaper({ 
   boards, 
@@ -36,6 +37,8 @@ export default function AddPaper({
   const [selectedFiles, setSelectedFiles] = useState<UploadFileItem[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
   const [commonTitle, setCommonTitle] = useState('');
+  const [contentMode, setContentMode] = useState<'file' | 'text'>('file');
+  const [richContent, setRichContent] = useState('');
 
   const [currentUploadIndex, setCurrentUploadIndex] = useState(0);
   const [totalUploadCount, setTotalUploadCount] = useState(0);
@@ -163,6 +166,46 @@ export default function AddPaper({
     e.preventDefault();
     const formElement = e.currentTarget;
 
+    const isTextMode = contentMode === 'text';
+    const hasRichContent = richContent.replace(/<[^>]*>/g, '').trim().length > 0;
+
+    if (isTextMode) {
+      if (!hasRichContent) {
+        setStatus({ type: 'error', message: 'Please write some content in the text editor.' });
+        return;
+      }
+      // Text-only path: call server action directly (no Appwrite storage upload)
+      setIsSubmitting(true);
+      setStatus({ type: '', message: '' });
+      setTotalUploadCount(1);
+      setCurrentUploadIndex(1);
+      setCurrentUploadProgress(50);
+
+      try {
+        const formData = new FormData(formElement);
+        formData.set('richContent', richContent);
+        formData.delete('paperFile');
+        const result = await createPaper(formData);
+        if (result?.success) {
+          setCurrentUploadProgress(100);
+          setStatus({ type: 'success', message: 'Content published successfully!' });
+          setTimeout(() => {
+            setRichContent('');
+            formRef.current?.reset();
+            setStatus({ type: '', message: '' });
+            setCurrentUploadProgress(0);
+          }, 2500);
+        } else {
+          throw new Error(result?.error || 'Failed to save content.');
+        }
+      } catch (error: any) {
+        setStatus({ type: 'error', message: error?.message || 'Failed to save content.' });
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     const filesToUpload = selectedFiles.filter(f => f.status === 'idle' || f.status === 'error');
     if (filesToUpload.length === 0) {
       setStatus({ type: 'error', message: 'Please select at least one paper file first.' });
@@ -226,6 +269,7 @@ export default function AddPaper({
         formData.delete('paperFile'); // bypass body limit
         formData.set('paperFileId', uploadedFile.$id);
         formData.set('title', item.title); // set individual custom title
+        formData.delete('richContent'); // no rich content in file mode
 
         // 3. Call Server Action
         const result = await createPaper(formData);
@@ -327,7 +371,7 @@ export default function AddPaper({
       </AnimatePresence>
       <h2
         style={{ fontFamily: 'var(--font-outfit)' }}
-        className="text-xl font-semibold text-foreground mb-6 flex items-center gap-3"
+        className="text-xl font-semibold text-foreground mb-4 flex items-center gap-3"
       >
         <div className="w-9 h-9 rounded-lg bg-secondary-500 flex items-center justify-center">
           <FileUp size={18} className="text-white" />
@@ -335,9 +379,37 @@ export default function AddPaper({
         Add New Papers
       </h2>
 
+      {/* Content Mode Switcher */}
+      <div className="flex gap-2 mb-5 p-1 rounded-xl bg-black/30 border border-white/5">
+        <button
+          type="button"
+          onClick={() => setContentMode('file')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+            contentMode === 'file'
+              ? 'bg-brand-yellow text-[#121212]'
+              : 'text-surface-500 hover:text-white'
+          }`}
+        >
+          <Upload size={14} />
+          Upload File
+        </button>
+        <button
+          type="button"
+          onClick={() => setContentMode('text')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+            contentMode === 'text'
+              ? 'bg-brand-yellow text-[#121212]'
+              : 'text-surface-500 hover:text-white'
+          }`}
+        >
+          <Type size={14} />
+          Write Text
+        </button>
+      </div>
+
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
         {/* Title Field */}
-        {selectedFiles.length <= 1 && (
+        {(contentMode === 'text' || selectedFiles.length <= 1) && (
           <div className="animate-page-in">
             <label htmlFor="title" className={labelClasses}>Paper Title</label>
             <input
@@ -348,12 +420,12 @@ export default function AddPaper({
               onChange={(e) => handleCommonTitleChange(e.target.value)}
               className={inputClasses}
               placeholder="e.g., FBISE Biology Class 10 Solved Paper 2026"
-              required={selectedFiles.length === 1}
+              required={contentMode === 'text' || selectedFiles.length === 1}
             />
           </div>
         )}
 
-        {selectedFiles.length > 1 && (
+        {contentMode === 'file' && selectedFiles.length > 1 && (
           <div className="p-4 rounded-2xl bg-[#1c1c1e]/50 border border-white/5 text-sm text-surface-500 animate-page-in">
             Multiple files selected. Please customize the titles of each paper individually in the files list below.
           </div>
@@ -419,7 +491,8 @@ export default function AddPaper({
           </datalist>
         </div>
 
-        {/* File upload area */}
+        {/* File upload area OR Rich text editor */}
+        {contentMode === 'file' ? (
         <div>
           <label htmlFor="paperFile" className={labelClasses}>
             {selectedFiles.length > 0 ? "Add More Files (PDF or Image)" : "Upload Files (PDF or Image)"}
@@ -431,7 +504,7 @@ export default function AddPaper({
             name="paperFile"
             id="paperFile"
             multiple
-            required={selectedFiles.length === 0}
+            required={false}
             onChange={handleFileChange}
             className="sr-only"
           />
@@ -459,6 +532,20 @@ export default function AddPaper({
             </p>
           </div>
         </div>
+        ) : (
+        <div>
+          <label className={labelClasses}>Text Content</label>
+          <RichTextEditor
+            value={richContent}
+            onChange={setRichContent}
+            placeholder="Write your content here... Use the toolbar to add bold, italic, bullet lists, and more."
+            disabled={isSubmitting}
+          />
+          <p className="text-[11px] text-surface-500 mt-1.5 pl-1">
+            Supports bold, italic, underline, bullet & numbered lists.
+          </p>
+        </div>
+        )}
 
         {/* Selected Files List */}
         {selectedFiles.length > 0 && (
@@ -586,7 +673,7 @@ export default function AddPaper({
 
         <motion.button 
           type="submit" 
-          disabled={isSubmitting || selectedFiles.length === 0}
+          disabled={isSubmitting || (contentMode === 'file' && selectedFiles.length === 0)}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           className="btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
@@ -594,16 +681,18 @@ export default function AddPaper({
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Uploading...
+              {contentMode === 'text' ? 'Publishing...' : 'Uploading...'}
             </div>
           ) : (
             <>
-              <Upload size={16} />
-              {selectedFiles.length > 1 
-                ? `Upload ${selectedFiles.length} Papers` 
-                : selectedFiles.length === 1 
-                  ? 'Upload 1 Paper' 
-                  : 'Upload Papers'
+              {contentMode === 'text' ? <Type size={16} /> : <Upload size={16} />}
+              {contentMode === 'text'
+                ? 'Publish Text Content'
+                : selectedFiles.length > 1 
+                  ? `Upload ${selectedFiles.length} Papers` 
+                  : selectedFiles.length === 1 
+                    ? 'Upload 1 Paper' 
+                    : 'Upload Papers'
               }
             </>
           )}

@@ -45,31 +45,35 @@ export default async function ViewPaperPage({ params }: { params: Promise<{ pape
   if (!success || !paper) notFound();
 
   const url: string = paper.pdfUrl || '';
+  const hasFile = Boolean(url);
 
   // High-IQ content-type detection using server-side HEAD request (handles Appwrite extensionless URLs perfectly)
+  // Skip entirely for text-only papers (no pdfUrl)
   let isImage = false;
-  try {
-    // Timeout of 2 seconds to keep the request snappy
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 2000);
-    
-    const headRes = await fetch(url, { 
-      method: 'HEAD',
-      signal: controller.signal
-    });
-    clearTimeout(id);
-    
-    const contentType = headRes.headers.get('content-type') || '';
-    isImage = contentType.startsWith('image/');
-  } catch (e) {
-    console.warn('Fallback to regex for content-type detection:', e);
-    isImage = /\.(jpg|jpeg|png|webp|gif|avif)(\?|$)/i.test(url);
+  if (hasFile) {
+    try {
+      // Timeout of 2 seconds to keep the request snappy
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), 2000);
+      
+      const headRes = await fetch(url, { 
+        method: 'HEAD',
+        signal: controller.signal
+      });
+      clearTimeout(id);
+      
+      const contentType = headRes.headers.get('content-type') || '';
+      isImage = contentType.startsWith('image/');
+    } catch (e) {
+      console.warn('Fallback to regex for content-type detection:', e);
+      isImage = /\.(jpg|jpeg|png|webp|gif|avif)(\?|$)/i.test(url);
+    }
   }
 
   return (
     /*
      * z-[9999] ensures this full-screen overlay renders above the footer
-     * (which is later in the DOM and would otherwise paint on top at z:auto).
+     * (which is later in the DOM and would otherwise paint on top at z:auto)
      */
     <div className="fixed inset-0 z-[9999] flex flex-col" style={{ background: '#111111' }}>
       <RecentPaperTracker paper={paper} />
@@ -94,35 +98,41 @@ export default async function ViewPaperPage({ params }: { params: Promise<{ pape
               <span>Back</span>
             </Link>
 
-            <div className="w-px h-5 bg-white/10" />
+            {/* Only show file actions when there's an actual file */}
+            {hasFile && (
+              <>
+                <div className="w-px h-5 bg-white/10" />
 
-            {/* Open in new tab — primary fallback for iOS */}
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-surface-500 hover:text-white hover:bg-white/10 active:bg-white/15 transition-all text-sm font-semibold"
-              style={{ touchAction: 'manipulation' } as React.CSSProperties}
-            >
-              <ExternalLink size={16} />
-              <span className="hidden sm:inline">Open</span>
-            </a>
+                {/* Open in new tab — primary fallback for iOS */}
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-surface-500 hover:text-white hover:bg-white/10 active:bg-white/15 transition-all text-sm font-semibold"
+                  style={{ touchAction: 'manipulation' } as React.CSSProperties}
+                >
+                  <ExternalLink size={16} />
+                  <span className="hidden sm:inline">Open</span>
+                </a>
 
-            {/* Download */}
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-brand-yellow text-[#121212] font-bold text-sm transition-all hover:brightness-110 active:scale-95"
-              style={{ touchAction: 'manipulation' } as React.CSSProperties}
-            >
-              <Download size={15} />
-              <span>Download</span>
-            </a>
+                {/* Download */}
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-brand-yellow text-[#121212] font-bold text-sm transition-all hover:brightness-110 active:scale-95"
+                  style={{ touchAction: 'manipulation' } as React.CSSProperties}
+                >
+                  <Download size={15} />
+                  <span>Download</span>
+                </a>
+              </>
+            )}
           </div>
         </div>
       </main>
     </div>
   );
 }
+

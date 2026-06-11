@@ -10,6 +10,7 @@ export interface IPaper extends Models.Document {
   group?: string;
   pdfUrl: string;
   description?: string;
+  richContent?: string;
 }
 
 export type PaperDocument = IPaper;
