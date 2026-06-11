@@ -17,7 +17,7 @@ export default function Footer() {
                 alt="SabaqPoint Logo" 
                 className="w-10 h-10 md:w-12 md:h-12 rounded-[14px] md:rounded-2xl object-cover border border-white/10 shadow-md group-hover:scale-105 transition-transform duration-300"
               />
-              <span className="font-outfit text-xl md:text-2xl font-bold tracking-tight text-white group-hover:opacity-80 transition-opacity">
+              <span className="font-outfit text-xl md:text-2xl font-bold tracking-tight text-foreground group-hover:opacity-80 transition-opacity">
                 Sabaq<span className="text-brand-yellow">Point</span>
               </span>
             </Link>

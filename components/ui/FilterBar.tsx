@@ -63,8 +63,8 @@ export default function FilterBar({
               style={buttonStyle}
               className={`px-5 py-2.5 rounded-full font-bold text-sm transition-colors cursor-pointer select-none whitespace-nowrap ${
                 activeCategory === filter
-                  ? 'bg-[#FCF7E5] text-[#121212]'
-                  : 'bg-[#222222] border border-white/10 text-white active:bg-white/10 hover:bg-white/5'
+                  ? 'bg-brand-yellow text-[#121212]'
+                  : 'bg-surface border border-border-subtle text-foreground active:bg-foreground/10 hover:bg-foreground/5'
               }`}
             >
               {filter === 'All' ? 'All' : filter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
@@ -73,7 +73,7 @@ export default function FilterBar({
         </div>
 
         {/* Floating Gradient & Filter Button */}
-        <div className="absolute right-0 top-0 bottom-0 flex items-center pl-8 bg-gradient-to-l from-[#111111] via-[#111111]/80 to-transparent pointer-events-none z-20">
+        <div className="absolute right-0 top-0 bottom-0 flex items-center pl-8 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none z-20">
           <button
             type="button"
             onClick={() => setIsFilterExpanded(!isFilterExpanded)}
@@ -81,7 +81,7 @@ export default function FilterBar({
             className={`pointer-events-auto px-4 py-2.5 min-h-[44px] rounded-full font-bold text-sm transition-all duration-200 cursor-pointer select-none flex items-center gap-2 border shadow-lg ${
               isFilterExpanded 
                 ? 'bg-brand-yellow text-[#121212] border-brand-yellow' 
-                : 'bg-[#222222] border-white/10 text-white hover:bg-[#2c2c2e]'
+                : 'bg-surface border border-border-subtle text-foreground hover:bg-surface-elevated'
             }`}
           >
             <SlidersHorizontal size={14} className={isFilterExpanded ? 'text-[#121212]' : 'text-surface-400'} />
@@ -103,7 +103,7 @@ export default function FilterBar({
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="bg-[#222222]/30 border border-white/5 rounded-[32px] p-5 md:p-6 space-y-5 md:space-y-6 mt-1 shadow-inner">
+            <div className="bg-surface-elevated/30 border border-border-subtle rounded-[32px] p-5 md:p-6 space-y-5 md:space-y-6 mt-1 shadow-inner">
               
               {/* Status Selector */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -125,7 +125,7 @@ export default function FilterBar({
                       className={`px-4 py-2 min-h-[38px] rounded-full font-bold text-xs md:text-sm transition-colors cursor-pointer select-none ${
                         activeStatus === status
                           ? 'bg-brand-green text-[#121212]'
-                          : 'bg-[#222222] border border-white/10 text-white active:bg-white/10 hover:bg-white/5'
+                          : 'bg-surface border border-border-subtle text-foreground active:bg-foreground/10 hover:bg-foreground/5'
                       }`}
                     >
                       {status === 'All' ? 'All Papers' : status}
@@ -155,11 +155,11 @@ export default function FilterBar({
                         className={`px-4 py-2 min-h-[38px] rounded-full font-bold text-xs md:text-sm transition-colors cursor-pointer select-none ${
                           activeYear === year
                             ? 'bg-brand-pink text-[#121212]'
-                            : 'bg-[#222222] border border-white/10 text-white active:bg-white/10 hover:bg-white/5'
-                      }`}
-                    >
-                      {year === 'All' ? 'All Years' : year}
-                    </button>
+                            : 'bg-surface border border-border-subtle text-foreground active:bg-foreground/10 hover:bg-foreground/5'
+                        }`}
+                      >
+                        {year === 'All' ? 'All Years' : year}
+                      </button>
                     ))}
                   </div>
                 </div>

@@ -35,6 +35,7 @@ export default function AddPaper({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<UploadFileItem[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [commonTitle, setCommonTitle] = useState('');
 
   const [currentUploadIndex, setCurrentUploadIndex] = useState(0);
   const [totalUploadCount, setTotalUploadCount] = useState(0);
@@ -55,6 +56,15 @@ export default function AddPaper({
       });
     };
   }, []);
+
+  const handleCommonTitleChange = (newTitle: string) => {
+    setCommonTitle(newTitle);
+    if (selectedFiles.length === 1) {
+      setSelectedFiles(prev =>
+        prev.map(item => ({ ...item, title: newTitle }))
+      );
+    }
+  };
 
   const addFiles = (files: File[]) => {
     const validFiles = files.filter(
@@ -84,7 +94,17 @@ export default function AddPaper({
       };
     });
 
-    setSelectedFiles(prev => [...prev, ...newItems]);
+    setSelectedFiles(prev => {
+      const updated = [...prev, ...newItems];
+      if (updated.length === 1) {
+        if (commonTitle) {
+          updated[0].title = commonTitle;
+        } else {
+          setCommonTitle(updated[0].title);
+        }
+      }
+      return updated;
+    });
   };
 
   const removeFile = (id: string) => {
@@ -93,14 +113,24 @@ export default function AddPaper({
       if (target?.previewUrl) {
         URL.revokeObjectURL(target.previewUrl);
       }
-      return prev.filter(item => item.id !== id);
+      const filtered = prev.filter(item => item.id !== id);
+      if (filtered.length === 1) {
+        setCommonTitle(filtered[0].title);
+      } else if (filtered.length === 0) {
+        setCommonTitle('');
+      }
+      return filtered;
     });
   };
 
   const handleTitleChange = (id: string, newTitle: string) => {
-    setSelectedFiles(prev =>
-      prev.map(item => (item.id === id ? { ...item, title: newTitle } : item))
-    );
+    setSelectedFiles(prev => {
+      const updated = prev.map(item => (item.id === id ? { ...item, title: newTitle } : item));
+      if (updated.length === 1) {
+        setCommonTitle(newTitle);
+      }
+      return updated;
+    });
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -237,6 +267,7 @@ export default function AddPaper({
           });
           return [];
         });
+        setCommonTitle('');
         formRef.current?.reset();
         setStatus({ type: '', message: '' });
       }, 2500);
@@ -305,6 +336,29 @@ export default function AddPaper({
       </h2>
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+        {/* Title Field */}
+        {selectedFiles.length <= 1 && (
+          <div className="animate-page-in">
+            <label htmlFor="title" className={labelClasses}>Paper Title</label>
+            <input
+              type="text"
+              name="title"
+              id="title"
+              value={commonTitle}
+              onChange={(e) => handleCommonTitleChange(e.target.value)}
+              className={inputClasses}
+              placeholder="e.g., FBISE Biology Class 10 Solved Paper 2026"
+              required={selectedFiles.length === 1}
+            />
+          </div>
+        )}
+
+        {selectedFiles.length > 1 && (
+          <div className="p-4 rounded-2xl bg-[#1c1c1e]/50 border border-white/5 text-sm text-surface-500 animate-page-in">
+            Multiple files selected. Please customize the titles of each paper individually in the files list below.
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="boardId" className={labelClasses}>Board</label>
@@ -460,10 +514,15 @@ export default function AddPaper({
                       placeholder="Enter customized paper title..."
                       className="w-full bg-transparent border-b border-transparent hover:border-white/10 focus:border-brand-yellow text-sm font-semibold text-white focus:outline-none pb-0.5 transition-all truncate disabled:opacity-75"
                     />
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-[10px] text-surface-500 font-medium">
                         {(item.file.size / (1024 * 1024)).toFixed(2)} MB
                       </span>
+                      {item.file.size > 5 * 1024 * 1024 && (
+                        <span className="text-[9px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full shrink-0">
+                          ⚠️ Heavy (Loads slow on mobile)
+                        </span>
+                      )}
                       {item.error && (
                         <span className="text-[10px] text-red-400 font-semibold truncate max-w-[150px] sm:max-w-[250px]">
                           • {item.error}

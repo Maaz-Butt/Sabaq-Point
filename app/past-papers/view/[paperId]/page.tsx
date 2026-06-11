@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Download, ExternalLink } from 'lucide-react';
 import RecentPaperTracker from './RecentPaperTracker';
+import DocumentViewer from './DocumentViewer';
 
 export async function generateMetadata({ params }: { params: Promise<{ paperId: string }> }) {
   const { paperId } = await params;
@@ -75,44 +76,7 @@ export default async function ViewPaperPage({ params }: { params: Promise<{ pape
 
       {/* Viewer */}
       <main className="flex-1 overflow-hidden relative">
-        {isImage ? (
-          /* ── Image viewer: fit entire image perfectly on screen, accounted for action bar padding ── */
-          <div className="w-full h-full flex items-center justify-center bg-[#111111] p-4 md:p-8">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={url}
-              alt={paper.title}
-              className="max-w-full max-h-[calc(100vh-110px)] object-contain select-none shadow-2xl rounded-lg border border-white/5"
-              style={{ display: 'block' }}
-            />
-          </div>
-        ) : (
-          /* ── PDF viewer: fit whole page to screen (using view=Fit standard open parameter) ── */
-          <object
-            data={`${url}#toolbar=0&navpanes=0&view=Fit`}
-            type="application/pdf"
-            className="w-full h-full border-0"
-            title={paper.title}
-          >
-            <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 bg-[#111111] text-white">
-              <div className="w-16 h-16 rounded-full bg-brand-yellow/10 border border-brand-yellow/20 flex items-center justify-center text-brand-yellow mb-4 shadow-[0_0_15px_rgba(252,213,113,0.1)]">
-                <ExternalLink size={24} />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Browser PDF Preview Blocked</h3>
-              <p className="text-sm text-surface-500 max-w-md mb-6 leading-relaxed">
-                Your browser or active security extensions blocked embedding the preview. Click the button below to view the solved past paper directly in a new tab.
-              </p>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-3 rounded-full bg-brand-yellow text-[#121212] font-bold text-sm hover:brightness-110 active:scale-95 transition-all shadow-[0_4px_20px_rgba(252,213,113,0.25)]"
-              >
-                Open Past Paper
-              </a>
-            </div>
-          </object>
-        )}
+        <DocumentViewer url={url} isImage={isImage} paper={paper} />
 
         {/* ── Floating action bar ── */}
         <div className="absolute bottom-5 inset-x-0 flex justify-center px-4 pointer-events-none">

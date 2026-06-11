@@ -227,7 +227,7 @@ export default function HeroSearch() {
         width: dropdownRect.width,
         zIndex: 99999,
       }}
-      className="bg-[#222222] border border-white/10 rounded-[24px] overflow-hidden shadow-2xl animate-page-in"
+      className="bg-surface border border-border-subtle rounded-[24px] overflow-hidden shadow-2xl animate-page-in"
     >
       <div
         className="overflow-y-auto p-2"
@@ -268,10 +268,10 @@ export default function HeroSearch() {
                   style={{ touchAction: 'manipulation' }}
                 >
                   <div
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-foreground/5 active:bg-foreground/10 transition-colors cursor-pointer"
                     style={{ touchAction: 'manipulation' }}
                   >
-                    <div className={`w-8 h-8 rounded-full bg-[#121212] flex items-center justify-center ${iconColor} shrink-0`}>
+                    <div className={`w-8 h-8 rounded-full bg-surface-elevated flex items-center justify-center ${iconColor} shrink-0`}>
                       <Icon size={14} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -301,7 +301,7 @@ export default function HeroSearch() {
   return (
     <>
       <div ref={wrapperRef} className="relative w-full group max-w-2xl">
-        <form onSubmit={handleSearch} className="relative w-full">
+        <form onSubmit={handleSearch} className="relative w-full flex items-center">
           <input
             ref={inputRef}
             type="text"
@@ -321,18 +321,23 @@ export default function HeroSearch() {
               }, 300);
             }}
             style={{ touchAction: 'manipulation', fontSize: '16px' /* prevents iOS auto-zoom */ }}
-            className="relative w-full pl-12 md:pl-14 pr-5 py-4 md:py-5 rounded-[24px] bg-[#222222] text-base md:text-lg text-white focus:outline-none focus:ring-2 focus:ring-brand-yellow transition-all placeholder:text-surface-500 shadow-xl border border-white/5"
+            className="relative w-full pl-5 md:pl-14 pr-24 md:pr-28 py-4 md:py-5 rounded-[24px] bg-surface-elevated text-foreground focus:outline-none focus:ring-2 focus:ring-brand-yellow transition-all placeholder:text-surface-500 shadow-xl border border-border-subtle"
             placeholder="Search boards, subjects, papers..."
             id="hero-search"
             autoComplete="off"
           />
+          <div
+            className="hidden md:block absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-surface-500 z-10 pointer-events-none"
+          >
+            <Search size={20} className="md:w-6 md:h-6" />
+          </div>
           <button
             type="submit"
-            className="absolute left-3 md:left-5 top-1/2 -translate-y-1/2 text-surface-500 hover:text-brand-yellow transition-colors z-10 p-2 rounded-full flex items-center justify-center"
+            className="absolute right-2 md:right-2.5 top-1/2 -translate-y-1/2 bg-brand-yellow hover:bg-brand-yellow/90 active:scale-95 text-[#121212] px-4 md:px-6 py-2 md:py-2.5 rounded-[18px] md:rounded-[20px] font-black text-sm md:text-base cursor-pointer shadow-md transition-all z-10"
             aria-label="Search"
             style={{ touchAction: 'manipulation' }}
           >
-            <Search size={20} className="md:w-6 md:h-6" />
+            Search
           </button>
         </form>
       </div>

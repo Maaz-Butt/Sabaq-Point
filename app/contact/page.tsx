@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Send, CheckCircle2, Sparkles, Clock, Globe, HelpCircle, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Mail, Send, CheckCircle2, Clock, HelpCircle, ArrowLeft, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ContactPage() {
@@ -49,11 +49,11 @@ export default function ContactPage() {
       <header className="mb-10 md:mb-14 relative z-10 w-full animate-page-in">
         <Link 
           href="/" 
-          className="inline-flex items-center gap-2 text-surface-500 hover:text-white font-bold text-sm mb-6 transition-colors duration-200"
+          className="inline-flex items-center gap-2 text-surface-500 hover:text-foreground font-bold text-sm mb-6 transition-colors duration-200"
         >
           <ArrowLeft size={16} /> Back to Home
         </Link>
-        <h1 className="text-display-lg md:text-display-xl font-bold font-sans mb-3 text-white tracking-tight">
+        <h1 className="text-display-lg md:text-display-xl font-bold font-sans mb-3 text-foreground tracking-tight">
           Get in <span className='text-brand-yellow'>Touch</span>
         </h1>
         <p className="text-surface-500 text-lg md:text-xl font-medium font-sans max-w-2xl">
@@ -65,13 +65,13 @@ export default function ContactPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-16 relative z-10">
         
         {/* Contact Form Box (Bento Cell 1 - Span 2) */}
-        <div className="bg-[#222222] border border-white/5 rounded-[32px] p-6 md:p-10 lg:col-span-2 flex flex-col justify-between shadow-xl">
+        <div className="bg-surface border border-border-subtle rounded-[32px] p-6 md:p-10 lg:col-span-2 flex flex-col justify-between shadow-xl">
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-brand-yellow/10 flex items-center justify-center text-brand-yellow">
                 <MessageSquare size={20} />
               </div>
-              <h2 className="text-2xl font-bold text-white font-outfit">Send a Message</h2>
+              <h2 className="text-2xl font-bold text-foreground font-outfit">Send a Message</h2>
             </div>
 
             <AnimatePresence mode="wait">
@@ -93,7 +93,7 @@ export default function ContactPage() {
                         placeholder="John Doe"
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full bg-[#111111] border border-white/5 rounded-2xl px-5 py-4 text-white placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium"
+                        className="w-full bg-surface-elevated border border-border-subtle rounded-2xl px-5 py-4 text-foreground placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium"
                       />
                     </div>
                     <div className="flex flex-col">
@@ -104,7 +104,7 @@ export default function ContactPage() {
                         placeholder="john@example.com"
                         value={formData.email}
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className="w-full bg-[#111111] border border-white/5 rounded-2xl px-5 py-4 text-white placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium"
+                        className="w-full bg-surface-elevated border border-border-subtle rounded-2xl px-5 py-4 text-foreground placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium"
                       />
                     </div>
                   </div>
@@ -117,7 +117,7 @@ export default function ContactPage() {
                       placeholder="Feedback / Request Paper / Business Inquiry"
                       value={formData.subject}
                       onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                      className="w-full bg-[#111111] border border-white/5 rounded-2xl px-5 py-4 text-white placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium"
+                      className="w-full bg-surface-elevated border border-border-subtle rounded-2xl px-5 py-4 text-foreground placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium"
                     />
                   </div>
 
@@ -129,7 +129,7 @@ export default function ContactPage() {
                       placeholder="Write your message here..."
                       value={formData.message}
                       onChange={(e) => setFormData({...formData, message: e.target.value})}
-                      className="w-full bg-[#111111] border border-white/5 rounded-2xl px-5 py-4 text-white placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium resize-none"
+                      className="w-full bg-surface-elevated border border-border-subtle rounded-2xl px-5 py-4 text-foreground placeholder-surface-500 focus:outline-none focus:border-brand-yellow/50 transition-colors font-medium resize-none"
                     />
                   </div>
 
@@ -155,12 +155,12 @@ export default function ContactPage() {
                   key="success-message"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="py-12 flex flex-col items-center justify-center text-center bg-[#111111] border border-white/5 rounded-3xl p-6"
+                  className="py-12 flex flex-col items-center justify-center text-center bg-surface-elevated border border-border-subtle rounded-3xl p-6"
                 >
                   <div className="w-16 h-16 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center mb-6">
                     <CheckCircle2 size={36} />
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-2 font-outfit">Message Sent Successfully!</h3>
+                  <h3 className="text-2xl font-bold text-foreground mb-2 font-outfit">Message Sent Successfully!</h3>
                   <p className="text-surface-500 font-bold text-sm max-w-sm mb-6">
                     Thank you for reaching out. Our support ecosystem has received your ticket and will respond shortly.
                   </p>
@@ -227,14 +227,14 @@ export default function ContactPage() {
           <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green">
             <HelpCircle size={20} />
           </div>
-          <h2 className="text-3xl font-bold text-white font-outfit">Frequently Asked Questions</h2>
+          <h2 className="text-3xl font-bold text-foreground font-outfit">Frequently Asked Questions</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {faqs.map((faq, index) => (
-            <div key={index} className="bg-[#222222]/50 border border-white/5 rounded-[28px] p-6 flex flex-col justify-between hover:border-white/10 transition-colors duration-300">
+            <div key={index} className="bg-surface-elevated/50 border border-border-subtle rounded-[28px] p-6 flex flex-col justify-between transition-colors duration-300">
               <div>
-                <h4 className="text-lg font-bold text-white mb-3 font-outfit leading-snug">{faq.q}</h4>
+                <h4 className="text-lg font-bold text-foreground mb-3 font-outfit leading-snug">{faq.q}</h4>
                 <p className="text-surface-500 font-semibold text-sm leading-relaxed">{faq.a}</p>
               </div>
             </div>

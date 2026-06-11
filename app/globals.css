@@ -21,6 +21,14 @@
   --color-surface-400: #636366;
   --color-surface-500: #8e8e93;
   --color-surface-600: #aeaeb2;
+
+  /* Theme mappings for Light/Dark Mode */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
 }
 
 :root {
@@ -28,9 +36,143 @@
   --foreground: #ffffff;
   --surface: #222222;
   --surface-elevated: #222222;
-  --border-subtle: rgba(255, 255, 255, 0);
-  --border-default: rgba(255, 255, 255, 0);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.1);
   --shadow-color: 0 0% 0%;
+}
+
+.light {
+  --background: #f7f7f9;
+  --foreground: #121212;
+  --surface: #ffffff;
+  --surface-elevated: #f0f0f3;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.1);
+  --shadow-color: 0 0% 80%;
+
+  /* Adjust theme levels in light mode for readability */
+  --color-surface-50: #ffffff;
+  --color-surface-100: #f0f0f3;
+  --color-surface-200: #e5e5ea;
+  --color-surface-300: #d1d1d6;
+  --color-surface-400: #8e8e93;
+  --color-surface-500: #555558;
+  --color-surface-600: #444446;
+}
+
+/* ===== Light Mode CSS Overrides ===== */
+.light {
+  /* Override general text-white to dark text except when nested in elements that should keep white text */
+  .text-white {
+    color: #121212;
+  }
+  
+  /* Elements that are white text but should remain white */
+  .bg-\[\#121212\] .text-white,
+  .bg-\[\#121212\] text-white,
+  .btn-primary .text-white,
+  .btn-primary,
+  .bg-brand-pink .text-white,
+  .bg-brand-green .text-white,
+  .bg-brand-yellow .text-white,
+  .card-glow-green .text-white,
+  .card-glow-yellow .text-white,
+  .card-glow-pink .text-white,
+  .card-glow-light .text-white,
+  .bg-surface-500 .text-white,
+  .badge .text-white,
+  .card-interactive .text-white,
+  a.bg-brand-yellow .text-white,
+  a.bg-\[\#121212\] .text-white,
+  a.bg-\[\#121212\] {
+    color: #ffffff;
+  }
+  
+  /* Make sure the text on colorful cards remains dark/readable if cards are bright */
+  .card-glow-green, .card-glow-green h3, .card-glow-green p,
+  .card-glow-yellow, .card-glow-yellow h3, .card-glow-yellow p,
+  .card-glow-pink, .card-glow-pink h3, .card-glow-pink p,
+  .card-glow-light, .card-glow-light h3, .card-glow-light p {
+    color: #121212 !important;
+  }
+  
+  /* SVG buttons and paths inside active indicators */
+  .bg-brand-yellow svg,
+  .bg-brand-green svg,
+  .bg-brand-pink svg {
+    color: #121212 !important;
+  }
+
+  .text-white\/60 {
+    color: rgba(18, 18, 18, 0.6);
+  }
+  .text-white\/30 {
+    color: rgba(18, 18, 18, 0.3);
+  }
+
+  /* Override dark backgrounds to light mode surfaces */
+  .bg-\[\#222222\] {
+    background-color: var(--surface) !important;
+    border-color: var(--border-subtle) !important;
+  }
+
+  .bg-\[\#111111\] {
+    background-color: var(--background) !important;
+  }
+  
+  .bg-\[\#121212\] {
+    background-color: var(--surface-elevated) !important;
+    color: #121212 !important;
+  }
+
+  /* SVG borders and borders */
+  .border-white\/5 {
+    border-color: var(--border-subtle) !important;
+  }
+  .border-white\/10 {
+    border-color: var(--border-default) !important;
+  }
+  
+  /* Text surface overrides */
+  .text-surface-500 {
+    color: #636366 !important;
+  }
+
+  /* Hover text overrides to prevent white text on light backgrounds */
+  .hover\:text-white:hover {
+    color: #121212 !important;
+  }
+  .group:hover .group-hover\:text-white {
+    color: #121212 !important;
+  }
+
+  /* Breadcrumb links override */
+  .breadcrumb-modern a {
+    color: rgba(18, 18, 18, 0.55) !important;
+  }
+  .breadcrumb-modern a:hover {
+    color: #121212 !important;
+  }
+  .breadcrumb-modern span {
+    color: #121212 !important;
+  }
+
+  /* Scrolled navbar pill background in light mode */
+  header .bg-\[\#121212\] {
+    background-color: #ffffff !important;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.1) !important;
+  }
+
+  /* Mobile nav pill in light mode */
+  nav.bg-\[\#121212\] {
+    background-color: #ffffff !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+  }
+
+  /* Nav active item dark text in light mode */
+  nav .text-\[\#121212\] {
+    color: #121212 !important;
+  }
 }
 
 /* ===== Base Resets ===== */

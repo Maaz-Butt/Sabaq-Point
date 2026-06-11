@@ -69,7 +69,7 @@ export default async function BoardClassSubjectsPage({ params }: { params: Promi
   ];
 
   const subjectColors = [
-    'bg-[#222222] text-white border border-white/10',
+    'bg-surface text-foreground border border-border-subtle',
   ];
 
   return (
@@ -101,12 +101,12 @@ export default async function BoardClassSubjectsPage({ params }: { params: Promi
               const color = subjectColors[i % subjectColors.length];
               return (
                 <Link key={subject} href={`/past-papers/${boardSlug}/${classParam}/${encodeURIComponent(subject.toLowerCase())}`}>
-                  <div className={`group rounded-[24px] p-5 ${color} flex items-center gap-4 hover:-translate-y-1 transition-transform cursor-pointer hover:bg-surface-300 animate-page-in`} style={{ animationDelay: `${i * 0.05}s` }}>
-                    <div className={`w-11 h-11 rounded-full bg-[#121212] flex items-center justify-center text-brand-yellow shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`group rounded-[24px] p-5 ${color} flex items-center gap-4 hover:-translate-y-1 transition-transform cursor-pointer hover:bg-surface-elevated/40 animate-page-in`} style={{ animationDelay: `${i * 0.05}s` }}>
+                    <div className={`w-11 h-11 rounded-full bg-surface-elevated flex items-center justify-center text-brand-yellow  shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                       <Book size={18} />
                     </div>
                     <h3
-                      className="text-lg font-bold font-sans text-white group-hover:text-brand-yellow transition-colors"
+                      className="text-lg font-bold font-sans text-foreground group-hover:text-brand-yellow transition-colors"
                     >
                       {subject}
                     </h3>

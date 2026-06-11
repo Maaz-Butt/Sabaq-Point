@@ -91,7 +91,7 @@ export default async function BoardClassesPage({ params }: { params: Promise<{ b
           {classes && classes.length > 0 ? (
             classes.map((classLevel: string, i: number) => (
               <Link key={classLevel} href={`/past-papers/${boardSlug}/${classLevel}`}>
-                <div className={`group rounded-[32px] p-6 ${classColors[i % classColors.length]} text-center flex flex-col items-center gap-3 hover:-translate-y-1 transition-transform cursor-pointer animate-page-in`} style={{ animationDelay: `${i * 0.05}s` }}>
+                <div className={`group h-48 md:h-auto rounded-[32px] p-6 ${classColors[i % classColors.length]} text-center flex flex-col items-center gap-3 hover:-translate-y-1 transition-transform cursor-pointer animate-page-in`} style={{ animationDelay: `${i * 0.05}s` }}>
                   <div className="w-14 h-14 rounded-full bg-[#121212]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <GraduationCap size={24} className="text-[#121212]" />
                   </div>
