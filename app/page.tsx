@@ -171,7 +171,25 @@ export default async function Home() {
           </div>
         </div>
 
-        {success && boards && boards.length > 0 ? (
+        {/* ------------------------------ google drive link ------------------------------ */}
+        <div className="flex items-center justify-center flex-col">
+          <h1 className="text-xl font-bold text-white mb-2 text-center max-w-4xl">
+            Due to some issue we are not able to show the papers on our website
+            for few days.
+          </h1>
+          <h2 className="text-lg font-bold text-white mb-2 text-center max-w-3xl">
+            But don't worry we are working on it and will be back soon and till
+            then you can keep your study going with our other resources.
+          </h2>
+          <p className="text-lg text-brand-yellow font-semibold mt-5">
+          Google Drive Link: <a className="font-bold text-brand-green" href="https://drive.google.com/drive/folders/1YzOOlwAP450V0lsZpo6TKIUJ3oAzblNT?usp=drive_link">1st Year</a>
+          </p>
+          <p className="mt-5">
+            Apologies for the inconvenience.</p>
+        </div>
+        {/* ------------------------------ google drive link end ------------------------------ */}
+
+        {/* {success && boards && boards.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {boards
               .filter(
@@ -193,7 +211,7 @@ export default async function Home() {
               No boards available right now.
             </p>
           </div>
-        )}
+        )} */}
       </section>
     </div>
   );
